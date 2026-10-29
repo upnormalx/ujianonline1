@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ujian Online - Soal</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: #F8FAFC; }
+    .exam-navbar {
+      background: var(--primary);
+      padding: 0 20px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 10px rgba(37,99,235,0.3);
+    }
+    .exam-brand { color:#fff; font-family:'Poppins',sans-serif; font-weight:700; font-size:1rem; }
+    .exam-info  { color:rgba(255,255,255,0.85); font-size:0.85rem; display:flex; align-items:center; gap:16px; }
+
+    .exam-container {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 64px);
+    }
+    @media(max-width:900px){
+      .exam-container { grid-template-columns:1fr; }
+      .exam-sidebar { display:none; }
+      .exam-sidebar.show { display:block; position:fixed; inset:0; z-index:200; width:280px; background:#fff; box-shadow:4px 0 24px rgba(0,0,0,0.2); }
+    }
+
+    /* SIDEBAR */
+    .exam-sidebar {
+      background: #fff;
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      overflow-y: auto;
+      height: calc(100vh - 64px);
+      position: sticky;
+      top: 64px;
+    }
+    .sidebar-title {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 12px;
+    }
+    .sidebar-info {
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+    .sidebar-info .info-row {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; border-bottom: 1px solid #F1F5F9;
+    }
+    .sidebar-info .info-row:last-child { border-bottom:none; }
+    .legend { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+    .legend-item { display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-muted); }
+    .legend-dot { width:24px; height:24px; border-radius:6px; flex-shrink:0; }
+
+    /* MAIN EXAM AREA */
+    .exam-main { padding: 24px; max-width: 800px; margin:0 auto; }
+
+    .soal-card {
+      background: #fff; border-radius: 16px; padding: 28px;
+      box-shadow: var(--shadow); margin-bottom: 24px;
+      border: 1px solid var(--border);
+      animation: slideUp 0.2s ease;
+    }
+    .soal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .soal-num-badge {
+      background: var(--primary); color: #fff;
+      border-radius: 10px; padding: 6px 14px;
+      font-weight: 700; font-size: 0.9rem;
+    }
+    .soal-actions { display:flex; gap:8px; }
+    .btn-ragu {
+      padding: 6px 14px; border-radius:8px;
+      background: #FEF3C7; color: var(--warning);
+      border: 1px solid #FDE68A; font-size:0.8rem;
+      cursor:pointer; font-weight:600;
+    }
+    .btn-ragu.active { background: var(--warning); color:#fff; }
+
+    .soal-pertanyaan { font-size:1rem; line-height:1.8; margin-bottom:20px; color:var(--text); }
+    .soal-img-wrap { margin-bottom:20px; text-align:center; }
+    .soal-img-wrap img { max-height:300px; border-radius:12px; border:1px solid var(--border); object-fit:contain; }
+
+    /* Opsi teks */
+    .opsi-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
+    .opsi-item {
+      display:flex; align-items:center; gap:14px;
+      padding:14px 18px; border:2px solid var(--border);
+      border-radius:12px; cursor:pointer; transition:all 0.18s;
+      font-size:0.95rem; user-select:none;
+    }
+    .opsi-item:hover { border-color:var(--primary); background:var(--primary-light); }
+    .opsi-item.selected { border-color:var(--primary); background:var(--primary-light); }
+    .opsi-item input[type=radio] { display:none; }
+    .opsi-badge {
+      width:34px; height:34px; border-radius:50%;
+      border:2px solid #CBD5E1;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:0.85rem; flex-shrink:0;
+      transition:all 0.18s; color:var(--text-muted);
+    }
+    .opsi-item.selected .opsi-badge { background:var(--primary); border-color:var(--primary); color:#fff; }
+    .opsi-text { flex:1; }
+    .opsi-text img { max-height:80px; object-fit:contain; border-radius:6px; margin-top:6px; }
+
+    /* Opsi gambar grid */
+    .opsi-img-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+    @media(max-width:500px){ .opsi-img-grid { grid-template-columns:1fr; } }
+    .opsi-img-card {
+      border:2px solid var(--border); border-radius:12px;
+      padding:14px; cursor:pointer; transition:all 0.18s;
+      text-align:center; user-select:none;
+    }
+    .opsi-img-card:hover  { border-color:var(--primary); }
+    .opsi-img-card.selected { border-color:var(--primary); background:var(--primary-light); }
+    .opsi-img-card img { width:100%; height:130px; object-fit:contain; border-radius:8px; margin-bottom:10px; }
+    .opsi-img-card .opsi-badge { margin:0 auto; }
+    .opsi-img-card.selected .opsi-badge { background:var(--primary); border-color:var(--primary); color:#fff; }
+
+    /* Navigation bar bawah */
+    .exam-bottom-nav {
+      background:#fff; border-top:1px solid var(--border);
+      padding:16px 24px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      position:sticky; bottom:0; z-index:50;
+    }
+    .progress-wrap { flex:1; }
+    .progress-text { font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; }
+
+    /* Soal nomor grid sidebar */
+    .soal-nav-grid { display:flex; flex-wrap:wrap; gap:8px; }
+    .snav-btn {
+      width:38px; height:38px; border-radius:8px;
+      border:2px solid var(--border); background:#fff;
+      font-size:0.85rem; font-weight:700; cursor:pointer;
+      transition:all 0.15s; display:flex; align-items:center; justify-content:center;
+    }
+    .snav-btn:hover    { border-color:var(--primary); color:var(--primary); }
+    .snav-btn.answered { background:var(--success); border-color:var(--success); color:#fff; }
+    .snav-btn.current  { background:var(--primary);  border-color:var(--primary);  color:#fff; transform:scale(1.1); }
+    .snav-btn.ragu     { background:var(--warning);  border-color:var(--warning);  color:#fff; }
+
+    /* Timer */
+    .timer-box {
+      display:flex; align-items:center; gap:8px;
+      background:rgba(255,255,255,0.15);
+      border:1px solid rgba(255,255,255,0.3);
+      border-radius:99px; padding:6px 16px;
+      color:#fff; font-weight:700; font-size:1rem;
+      font-family:'Courier New',monospace;
+    }
+    .timer-box.danger { background:rgba(220,38,38,0.3); border-color:#EF4444; animation:pulse 1s infinite; }
+
+    @keyframes slideUp { from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1} }
+    @keyframes pulse   { 0%,100%{opacity:1}50%{opacity:0.7} }
+  </style>
+</head>
+<body>
+  <!-- NAVBAR UJIAN -->
+  <nav class="exam-navbar">
+    <div class="exam-brand">
+      <i class="fas fa-graduation-cap"></i> Ujian Online
+    </div>
+    <div class="exam-info">
+      <span id="nav-nama" class="hide-mobile"></span>
+      <div class="timer-box" id="timer-box">
+        <i class="fas fa-clock"></i>
+        <span id="timer-display">60:00</span>
+      </div>
+      <!-- Mobile sidebar toggle -->
+      <button class="btn btn-icon" onclick="toggleSidebar()" style="color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);" title="Daftar Soal">
+        <i class="fas fa-th-large"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- LAYOUT UTAMA -->
+  <div class="exam-container">
+    <!-- SIDEBAR -->
+    <aside class="exam-sidebar" id="exam-sidebar">
+      <div class="sidebar-info">
+        <div class="info-row">
+          <span style="color:var(--text-muted)">Nama</span>
+          <strong id="sb-nama">-</strong>
+        </div>
+        <div class="info-row">
+          <span style="color:var(--text-muted)">Mapel</span>
+          <strong id="sb-mapel">-</strong>
+        </div>
+        <div class="info-row">
+          <span style="color:var(--text-muted)">Dijawab</span>
+          <strong><span id="sb-answered">0</span> / <span id="sb-total">0</span></strong>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--success);border:2px solid var(--success)"></div>
+          Sudah dijawab
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--warning);border:2px solid var(--warning)"></div>
+          Ragu-ragu
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#fff;border:2px solid #CBD5E1"></div>
+          Belum dijawab
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--primary);border:2px solid var(--primary)"></div>
+          Soal aktif
+        </div>
+      </div>
+
+      <div class="sidebar-title">Navigasi Soal</div>
+      <div class="soal-nav-grid" id="soal-nav-grid"></div>
+
+      <div style="margin-top:20px;">
+        <button class="btn btn-success btn-full" onclick="konfirmasiSelesai()">
+          <i class="fas fa-paper-plane"></i> Selesai Ujian
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN EXAM CONTENT -->
+    <main class="exam-main" id="exam-main">
+      <!-- Loading State -->
+      <div id="state-loading" style="text-align:center;padding:60px 20px;">
+        <div class="spinner" style="margin:0 auto 16px;"></div>
+        <p style="color:var(--text-muted)">Memuat soal ujian...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="state-empty" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="font-size:4rem;margin-bottom:16px;">📭</div>
+        <h3>Soal Tidak Tersedia</h3>
+        <p style="color:var(--text-muted)">Belum ada soal untuk mata pelajaran ini.</p>
+      </div>
+
+      <!-- Soal Content -->
+      <div id="soal-content" style="display:none;"></div>
+    </main>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="exam-bottom-nav" id="bottom-nav" style="display:none;">
+    <button class="btn btn-secondary" id="btn-prev" onclick="navigateSoal(-1)">
+      <i class="fas fa-arrow-left"></i> <span class="hide-mobile">Sebelumnya</span>
+    </button>
+    <div class="progress-wrap hide-mobile">
+      <div class="progress-text"><span id="prog-cur">0</span> dari <span id="prog-total">0</span> soal</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-next" onclick="navigateSoal(1)">
+      <span class="hide-mobile">Selanjutnya</span> <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script>
+    // ============================================================
+    // HALAMAN UJIAN - Logic
+    // ============================================================
+
+    let soalList      = [];      // Semua soal
+    let jawabanSiswa  = {};      // { noSoal: 'A'|'B'|'C'|'D' }
+    let soalRagu      = new Set(); // Nomor soal yang ditandai ragu
+    let currentSoal   = 0;       // Index soal aktif (0-based)
+    let sesi          = null;    // Data sesi dari localStorage
+    let timerInterval = null;    // Interval countdown
+    let sisaSekunder  = 0;       // Sisa waktu dalam detik
+    let autosaveInt   = null;    // Autosave interval
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Ambil sesi
+      sesi = Utils.getLocal(CONFIG.STORAGE_KEYS.SESSION);
+      if (!sesi || !sesi.sessionId) {
+        Utils.toast('Sesi tidak valid. Silakan login kembali.', 'error');
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return;
+      }
+
+      // Ambil jawaban yang sudah ada (autosave lokal)
+      jawabanSiswa = Utils.getLocal(CONFIG.STORAGE_KEYS.JAWABAN) || {};
+      Object.keys(jawabanSiswa).filter(k => k.startsWith('ragu_')).forEach(k => {
+        soalRagu.add(parseInt(k.replace('ragu_', '')));
+      });
+
+      // Isi info UI
+      document.getElementById('nav-nama').textContent = sesi.nama;
+      document.getElementById('sb-nama').textContent  = sesi.nama;
+      document.getElementById('sb-mapel').textContent = sesi.namaMapel;
+
+      // Hitung sisa waktu dari startTime + durasi
+      const durasi      = (sesi.durasi || CONFIG.DEFAULT_DURASI) * 60; // detik
+      const elapsed     = Math.floor((Date.now() - sesi.startTime) / 1000);
+      sisaSekunder      = Math.max(0, durasi - elapsed);
+
+      if (sisaSekunder <= 0) {
+        // Waktu habis
+        autoSubmit();
+        return;
+      }
+
+      // Muat soal
+      await loadSoal();
+
+      // Mulai timer
+      startTimer();
+
+      // Autosave setiap 30 detik
+      autosaveInt = setInterval(autosave, CONFIG.AUTOSAVE_INTERVAL * 1000);
+    });
+
+    // Cegah menutup tab
+    window.addEventListener('beforeunload', (e) => {
+      if (soalList.length > 0 && !window._submitDone) {
+        e.preventDefault();
+        e.returnValue = 'Ujian Anda belum selesai. Yakin ingin meninggalkan halaman?';
+      }
+    });
+
+    // ============================================================
+    // LOAD SOAL
+    // ============================================================
+    async function loadSoal() {
+      try {
+        const res = await API.getSoal(sesi.kodeMapel, sesi.kelas);
+        document.getElementById('state-loading').style.display = 'none';
+
+        if (res.status !== 'success' || !res.data || res.data.length === 0) {
+          document.getElementById('state-empty').style.display = 'block';
+          return;
+        }
+
+        soalList = res.data;
+        document.getElementById('sb-total').textContent   = soalList.length;
+        document.getElementById('prog-total').textContent = soalList.length;
+        document.getElementById('soal-content').style.display = 'block';
+        document.getElementById('bottom-nav').style.display   = 'flex';
+
+        buildNavGrid();
+        renderSoal(0);
+
+      } catch (err) {
+        document.getElementById('state-loading').style.display = 'none';
+        document.getElementById('state-empty').style.display   = 'block';
+        Utils.toast('Gagal memuat soal: ' + err.message, 'error');
+      }
+    }
+
+    // ============================================================
+    // RENDER SOAL
+    // ============================================================
+    function renderSoal(index) {
+      currentSoal = index;
+      const soal  = soalList[index];
+      if (!soal) return;
+
+      const no         = Number(soal.NoSoal);
+      const jawaban    = jawabanSiswa[no] || '';
+      const isRagu     = soalRagu.has(no);
+      const tipe       = soal.TipeSoal || 'text';
+
+      // Tentukan apakah opsi menggunakan gambar
+      const opsiAda4 = soal.OpsiA || soal.OpsiB || soal.OpsiC || soal.OpsiD;
+      const pakaiGambar = (soal.GambarA || soal.GambarB || soal.GambarC || soal.GambarD) &&
+                          (tipe === 'image_image' || tipe === 'text_image');
+
+      // Build opsi
+      const opsiData = [
+        { huruf:'A', teks:soal.OpsiA || '', gambar:soal.GambarA || '' },
+        { huruf:'B', teks:soal.OpsiB || '', gambar:soal.GambarB || '' },
+        { huruf:'C', teks:soal.OpsiC || '', gambar:soal.GambarC || '' },
+        { huruf:'D', teks:soal.OpsiD || '', gambar:soal.GambarD || '' }
+      ].filter(o => o.teks || o.gambar);
+
+      let opsiHtml = '';
+      if (pakaiGambar) {
+        // Grid gambar 2x2
+        opsiHtml = `<div class="opsi-img-grid">`;
+        opsiData.forEach(o => {
+          const sel = jawaban === o.huruf ? ' selected' : '';
+          const imgTag = o.gambar
+            ? `<img src="${o.gambar}" alt="Opsi ${o.huruf}" onerror="this.style.display='none'">`
+            : (o.teks ? `<div style="min-height:80px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;padding:12px">${o.teks}</div>` : '');
+
+          opsiHtml += `
+            <div class="opsi-img-card${sel}" onclick="pilihJawaban(${no},'${o.huruf}',this)" data-huruf="${o.huruf}">
+              ${imgTag}
+              <div class="opsi-badge">${o.huruf}</div>
+              ${o.teks && o.gambar ? `<div style="font-size:0.8rem;margin-top:6px;color:var(--text-muted)">${o.teks}</div>` : ''}
+            </div>`;
+        });
+        opsiHtml += `</div>`;
+      } else {
+        // List teks
+        opsiHtml = `<ul class="opsi-list">`;
+        opsiData.forEach(o => {
+          const sel = jawaban === o.huruf ? ' selected' : '';
+          const gambarHtml = o.gambar
+            ? `<img src="${o.gambar}" alt="Opsi ${o.huruf}" onerror="this.style.display='none'">`
+            : '';
+          opsiHtml += `
+            <li class="opsi-item${sel}" onclick="pilihJawaban(${no},'${o.huruf}',this)" data-huruf="${o.huruf}">
+              <div class="opsi-badge">${o.huruf}</div>
+              <div class="opsi-text">${Utils.escapeHtml(o.teks)}${gambarHtml}</div>
+            </li>`;
+        });
+        opsiHtml += `</ul>`;
+      }
+
+      // Gambar soal
+      const gambarSoalHtml = soal.GambarSoal
+        ? `<div class="soal-img-wrap"><img src="${soal.GambarSoal}" alt="Gambar Soal" onerror="this.style.display='none'"></div>`
+        : '';
+
+      // HTML soal card
+      const html = `
+        <div class="soal-card">
+          <div class="soal-header">
+            <div class="soal-num-badge">Soal ${no}</div>
+            <div class="soal-actions">
+              <button class="btn-ragu ${isRagu ? 'active' : ''}" onclick="toggleRagu(${no},this)" title="Tandai ragu-ragu">
+                <i class="fas fa-flag"></i> ${isRagu ? 'Ragu' : 'Tandai Ragu'}
+              </button>
+            </div>
+          </div>
+
+          ${soal.Pertanyaan ? `<div class="soal-pertanyaan">${soal.Pertanyaan}</div>` : ''}
+          ${gambarSoalHtml}
+          ${opsiHtml}
+        </div>
+      `;
+
+      document.getElementById('soal-content').innerHTML = html;
+
+      // Update UI lain
+      updateNavGrid();
+      updateProgress();
+      updateBotNavBtns();
+    }
+
+    // ============================================================
+    // PILIH JAWABAN
+    // ============================================================
+    function pilihJawaban(noSoal, huruf, el) {
+      jawabanSiswa[noSoal] = huruf;
+      autosave();
+
+      // Update visual: hapus selected dari saudara
+      const parent  = el.parentElement;
+      const siblings = parent.querySelectorAll('.opsi-item, .opsi-img-card');
+      siblings.forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+
+      // Update sidebar nav
+      updateNavGrid();
+      document.getElementById('sb-answered').textContent =
+        Object.keys(jawabanSiswa).filter(k => !k.startsWith('ragu_')).length;
+    }
+
+    // ============================================================
+    // RAGU-RAGU
+    // ============================================================
+    function toggleRagu(noSoal, btn) {
+      if (soalRagu.has(noSoal)) {
+        soalRagu.delete(noSoal);
+        delete jawabanSiswa[`ragu_${noSoal}`];
+        btn.className = 'btn-ragu';
+        btn.innerHTML = '<i class="fas fa-flag"></i> Tandai Ragu';
+      } else {
+        soalRagu.add(noSoal);
+        jawabanSiswa[`ragu_${noSoal}`] = true;
+        btn.className = 'btn-ragu active';
+        btn.innerHTML = '<i class="fas fa-flag"></i> Ragu';
+      }
+      autosave();
+      updateNavGrid();
+    }
+
+    // ============================================================
+    // NAVIGASI
+    // ============================================================
+    function navigateSoal(dir) {
+      const next = currentSoal + dir;
+      if (next >= 0 && next < soalList.length) {
+        renderSoal(next);
+      }
+    }
+
+    function goToSoal(index) {
+      renderSoal(index);
+      // Tutup sidebar mobile
+      document.getElementById('exam-sidebar').classList.remove('show');
+    }
+
+    function updateBotNavBtns() {
+      document.getElementById('btn-prev').disabled = currentSoal === 0;
+      document.getElementById('btn-next').disabled = currentSoal === soalList.length - 1;
+    }
+
+    function updateProgress() {
+      const cur   = currentSoal + 1;
+      const total = soalList.length;
+      document.getElementById('prog-cur').textContent = cur;
+      document.getElementById('progress-bar').style.width = `${(cur / total) * 100}%`;
+    }
+
+    // ============================================================
+    // NAVIGASI GRID SIDEBAR
+    // ============================================================
+    function buildNavGrid() {
+      const grid = document.getElementById('soal-nav-grid');
+      grid.innerHTML = '';
+      soalList.forEach((s, i) => {
+        const no  = Number(s.NoSoal);
+        const btn = document.createElement('button');
+        btn.className   = 'snav-btn';
+        btn.textContent = no;
+        btn.title       = `Soal ${no}`;
+        btn.onclick     = () => goToSoal(i);
+        btn.id          = `snav-${no}`;
+        grid.appendChild(btn);
+      });
+    }
+
+    function updateNavGrid() {
+      soalList.forEach((s, i) => {
+        const no  = Number(s.NoSoal);
+        const btn = document.getElementById(`snav-${no}`);
+        if (!btn) return;
+        let cls = 'snav-btn';
+        if (i === currentSoal)      cls += ' current';
+        else if (soalRagu.has(no))  cls += ' ragu';
+        else if (jawabanSiswa[no])  cls += ' answered';
+        btn.className = cls;
+      });
+
+      // Update counter
+      const answered = Object.keys(jawabanSiswa)
+        .filter(k => !k.startsWith('ragu_') && jawabanSiswa[k]).length;
+      document.getElementById('sb-answered').textContent = answered;
+    }
+
+    // ============================================================
+    // TIMER
+    // ============================================================
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        sisaSekunder--;
+        updateTimerDisplay();
+        if (sisaSekunder <= 0) {
+          clearInterval(timerInterval);
+          autoSubmit();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const m   = Math.floor(sisaSekunder / 60).toString().padStart(2, '0');
+      const s   = (sisaSekunder % 60).toString().padStart(2, '0');
+      const box = document.getElementById('timer-box');
+      document.getElementById('timer-display').textContent = `${m}:${s}`;
+
+      if (sisaSekunder <= 300) { // 5 menit
+        box.classList.add('danger');
+      }
+    }
+
+    // ============================================================
+    // AUTOSAVE
+    // ============================================================
+    function autosave() {
+      Utils.saveLocal(CONFIG.STORAGE_KEYS.JAWABAN, jawabanSiswa);
+    }
+
+    // ============================================================
+    // SELESAI UJIAN
+    // ============================================================
+    async function konfirmasiSelesai() {
+      const dijawab   = Object.keys(jawabanSiswa).filter(k => !k.startsWith('ragu_')).length;
+      const belumDijawab = soalList.length - dijawab;
+
+      let msg = `Anda telah menjawab <strong>${dijawab}</strong> dari <strong>${soalList.length}</strong> soal.`;
+      if (belumDijawab > 0) {
+        msg += `<br><br><span style="color:#DC2626">⚠️ Masih ada <strong>${belumDijawab}</strong> soal yang belum dijawab!</span>`;
+      }
+
+      const yakin = await Utils.confirm('Selesaikan Ujian?', msg + '<br><br>Jawaban tidak dapat diubah setelah dikirim.', 'Ya, Selesai', 'Kembali');
+      if (yakin) submitUjian();
+    }
+
+    async function submitUjian() {
+      clearInterval(timerInterval);
+      clearInterval(autosaveInt);
+      Utils.showLoading(true, 'Mengirim jawaban...');
+
+      try {
+        const jawabanArr = soalList.map(s => ({
+          noSoal  : Number(s.NoSoal),
+          jawaban : jawabanSiswa[Number(s.NoSoal)] || ''
+        }));
+
+        const res = await API.submitUjian({
+          nis       : sesi.nis,
+          nama      : sesi.nama,
+          kelas     : sesi.kelas,
+          kodeMapel : sesi.kodeMapel,
+          namaMapel : sesi.namaMapel,
+          jawaban   : jawabanArr,
+          sessionId : sesi.sessionId
+        });
+
+        Utils.showLoading(false);
+
+        if (res.status !== 'success') throw new Error(res.message);
+
+        window._submitDone = true;
+
+        // Simpan hasil untuk halaman hasil
+        Utils.saveLocal('ujian_hasil', { ...res.data, ...sesi });
+        Utils.removeLocal(CONFIG.STORAGE_KEYS.SESSION);
+        Utils.removeLocal(CONFIG.STORAGE_KEYS.JAWABAN);
+
+        window.location.href = 'hasil.html';
+
+      } catch (err) {
+        Utils.showLoading(false);
+        Utils.toast('Gagal mengirim ujian: ' + err.message, 'error');
+        clearInterval(timerInterval);
+        startTimer();
+      }
+    }
+
+    async function autoSubmit() {
+      Utils.toast('Waktu habis! Jawaban dikirim otomatis.', 'warning', 5000);
+      await submitUjian();
+    }
+
+    // ============================================================
+    // MOBILE SIDEBAR TOGGLE
+    // ============================================================
+    function toggleSidebar() {
+      document.getElementById('exam-sidebar').classList.toggle('show');
+    }
+  </script>
+</body>
+</html>

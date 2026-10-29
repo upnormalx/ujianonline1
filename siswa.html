@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Siswa - Admin</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    .admin-wrap { display:flex; min-height:100vh; }
+    .sidebar { width:260px; background:#1E293B; flex-shrink:0; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }
+    .sidebar-logo { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:12px; color:#fff; font-family:'Poppins',sans-serif; font-weight:700; font-size:1rem; }
+    .sidebar-logo .logo-icon { font-size:1.6rem; }
+    .nav-section { padding:16px 20px 6px; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.35); }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:11px 20px; color:rgba(255,255,255,0.65); font-size:0.88rem; cursor:pointer; transition:all 0.18s; border-left:3px solid transparent; text-decoration:none; }
+    .nav-item:hover  { background:rgba(255,255,255,0.06); color:#fff; text-decoration:none; }
+    .nav-item.active { background:rgba(37,99,235,0.2); color:#fff; border-left-color:#2563EB; }
+    .nav-item .ni { width:20px; text-align:center; font-size:0.95rem; }
+    .sidebar-bottom { margin-top:auto; padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08); }
+    .main-content { flex:1; padding:28px; background:#F8FAFC; overflow:auto; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+  </style>
+</head>
+<body>
+<div class="admin-wrap">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><span class="logo-icon">🎓</span><div>Ujian Online<div style="font-size:0.7rem;opacity:0.5;font-weight:400">Admin Panel</div></div></div>
+    <div class="nav-section">Menu Utama</div>
+    <a href="dashboard.html" class="nav-item"><span class="ni"><i class="fas fa-home"></i></span> Dashboard</a>
+    <a href="soal.html"      class="nav-item"><span class="ni"><i class="fas fa-question-circle"></i></span> Manajemen Soal</a>
+    <a href="siswa.html"     class="nav-item active"><span class="ni"><i class="fas fa-users"></i></span> Manajemen Siswa</a>
+    <a href="mapel.html"     class="nav-item"><span class="ni"><i class="fas fa-book"></i></span> Mata Pelajaran</a>
+    <a href="hasil.html"     class="nav-item"><span class="ni"><i class="fas fa-chart-bar"></i></span> Hasil Ujian</a>
+    <div class="sidebar-bottom">
+      <div class="nav-item" onclick="logout()" style="border-radius:8px;color:rgba(248,113,113,0.8);"><span class="ni"><i class="fas fa-sign-out-alt"></i></span> Keluar</div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div><h1>Manajemen Siswa</h1><div style="font-size:0.8rem;color:var(--text-muted);"><i class="fas fa-users"></i> Admin / Siswa</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="downloadTemplate()"><i class="fas fa-download"></i> Template Excel</button>
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer;"><i class="fas fa-upload"></i> Import Excel<input type="file" accept=".xlsx,.xls" onchange="importExcel(event)" style="display:none"></label>
+        <button class="btn btn-primary" onclick="openModalTambah()"><i class="fas fa-plus"></i> Tambah Siswa</button>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card" style="margin-bottom:20px;padding:16px;">
+      <div class="filter-bar">
+        <div class="form-group"><label class="form-label">Cari</label>
+          <input type="text" class="form-control" id="search" placeholder="Nama / NIS..." oninput="renderTable()"></div>
+        <div class="form-group"><label class="form-label">Kelas</label>
+          <select class="form-control" id="filter-kelas" onchange="renderTable()">
+            <option value="">Semua Kelas</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-control" id="filter-status" onchange="renderTable()">
+            <option value="">Semua</option>
+            <option value="Aktif">Aktif</option>
+            <option value="Nonaktif">Nonaktif</option>
+          </select></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Daftar Siswa (<span id="count-siswa">0</span>)</div>
+        <button class="btn btn-danger btn-sm" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>NIS</th><th>Nama</th><th>Kelas</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="siswa-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL TAMBAH/EDIT SISWA -->
+<div class="modal-overlay" id="modal-siswa" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Tambah Siswa</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">NIS <span class="required">*</span></label>
+        <input type="text" class="form-control" id="f-nis" placeholder="Nomor Induk Siswa"></div>
+      <div class="form-group"><label class="form-label">Nama Lengkap <span class="required">*</span></label>
+        <input type="text" class="form-control" id="f-nama" placeholder="Nama lengkap siswa"></div>
+      <div class="form-group"><label class="form-label">Kelas <span class="required">*</span></label>
+        <input type="text" class="form-control" id="f-kelas" placeholder="Contoh: X-IPA-1"></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-control" id="f-status"><option>Aktif</option><option>Nonaktif</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveSiswa()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script>
+  if (!Utils.getLocal(CONFIG.STORAGE_KEYS.ADMIN_TOKEN)) window.location.href = 'login.html';
+
+  let allSiswa = [];
+  let editNIS  = null;
+
+  async function loadSiswa() {
+    Utils.showLoading(true, 'Memuat data siswa...');
+    try {
+      const res = await API.getSiswaAll();
+      Utils.showLoading(false);
+      if (res.status !== 'success') throw new Error(res.message);
+      allSiswa = res.data || [];
+
+      // Isi filter kelas
+      const kelas = [...new Set(allSiswa.map(s => s.Kelas).filter(Boolean))].sort();
+      const selK  = document.getElementById('filter-kelas');
+      selK.innerHTML = '<option value="">Semua Kelas</option>';
+      kelas.forEach(k => selK.innerHTML += `<option>${k}</option>`);
+
+      renderTable();
+    } catch(e) {
+      Utils.showLoading(false);
+      Utils.toast('Gagal memuat: ' + e.message, 'error');
+    }
+  }
+
+  function renderTable() {
+    const q      = document.getElementById('search').value.toLowerCase();
+    const kelas  = document.getElementById('filter-kelas').value;
+    const status = document.getElementById('filter-status').value;
+
+    let data = allSiswa.filter(s => {
+      const matchQ = !q || (s.Nama||'').toLowerCase().includes(q) || (s.NIS||'').toString().includes(q);
+      const matchK = !kelas  || s.Kelas  === kelas;
+      const matchS = !status || s.Status === status;
+      return matchQ && matchK && matchS;
+    });
+
+    document.getElementById('count-siswa').textContent = data.length;
+    const tbody = document.getElementById('siswa-tbody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">📭 Tidak ada data siswa</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(s => `
+      <tr>
+        <td><code>${s.NIS}</code></td>
+        <td><strong>${Utils.escapeHtml(s.Nama)}</strong></td>
+        <td><span class="badge badge-primary">${s.Kelas}</span></td>
+        <td><span class="badge ${s.Status==='Aktif'?'badge-success':'badge-danger'}">${s.Status||'Aktif'}</span></td>
+        <td><div class="table-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editSiswa('${s.NIS}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-danger btn-sm"    onclick="hapusSiswa('${s.NIS}','${Utils.escapeHtml(s.Nama)}')"><i class="fas fa-trash"></i></button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  function openModalTambah() {
+    editNIS = null;
+    document.getElementById('modal-title').textContent = 'Tambah Siswa';
+    document.getElementById('f-nis').value    = '';
+    document.getElementById('f-nama').value   = '';
+    document.getElementById('f-kelas').value  = '';
+    document.getElementById('f-status').value = 'Aktif';
+    document.getElementById('f-nis').disabled = false;
+    document.getElementById('modal-siswa').style.display = 'flex';
+  }
+
+  function editSiswa(nis) {
+    const s = allSiswa.find(x => String(x.NIS) === String(nis));
+    if (!s) return;
+    editNIS = nis;
+    document.getElementById('modal-title').textContent = 'Edit Siswa';
+    document.getElementById('f-nis').value    = s.NIS;
+    document.getElementById('f-nama').value   = s.Nama;
+    document.getElementById('f-kelas').value  = s.Kelas;
+    document.getElementById('f-status').value = s.Status || 'Aktif';
+    document.getElementById('f-nis').disabled = true;
+    document.getElementById('modal-siswa').style.display = 'flex';
+  }
+
+  async function saveSiswa() {
+    const nis   = document.getElementById('f-nis').value.trim();
+    const nama  = document.getElementById('f-nama').value.trim();
+    const kelas = document.getElementById('f-kelas').value.trim();
+    const status= document.getElementById('f-status').value;
+    if (!nis || !nama || !kelas) { Utils.toast('Isi semua field wajib', 'warning'); return; }
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true; btn.textContent = 'Menyimpan...';
+    try {
+      let res;
+      if (editNIS) {
+        res = await API.editSiswa(editNIS, { Nama:nama, Kelas:kelas, Status:status });
+      } else {
+        res = await API.tambahSiswa({ nis, nama, kelas, Status:status });
+      }
+      if (res.status !== 'success') throw new Error(res.message);
+      Utils.toast(res.message, 'success');
+      closeModal();
+      await loadSiswa();
+    } catch(e) {
+      Utils.toast('Error: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Simpan';
+    }
+  }
+
+  async function hapusSiswa(nis, nama) {
+    const ok = await Utils.confirm('Hapus Siswa', `Yakin hapus siswa <strong>${nama}</strong>?`, 'Hapus', 'Batal');
+    if (!ok) return;
+    try {
+      const res = await API.hapusSiswa(nis);
+      if (res.status !== 'success') throw new Error(res.message);
+      Utils.toast('Siswa berhasil dihapus', 'success');
+      await loadSiswa();
+    } catch(e) { Utils.toast('Error: ' + e.message, 'error'); }
+  }
+
+  function closeModal() { document.getElementById('modal-siswa').style.display = 'none'; }
+
+  function downloadTemplate() {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([['NIS','Nama','Kelas','Status'],['001','Contoh Siswa','X-IPA-1','Aktif']]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Siswa');
+    XLSX.writeFile(wb, 'template_siswa.xlsx');
+  }
+
+  function importExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const wb   = XLSX.read(e.target.result, { type:'array' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws);
+        if (!data.length) { Utils.toast('File kosong', 'warning'); return; }
+        const res = await API.importSiswa(data);
+        if (res.status !== 'success') throw new Error(res.message);
+        Utils.toast(res.message, 'success');
+        await loadSiswa();
+      } catch(e) { Utils.toast('Import gagal: ' + e.message, 'error'); }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
+  }
+
+  function exportExcel() {
+    const q      = document.getElementById('search').value.toLowerCase();
+    const kelas  = document.getElementById('filter-kelas').value;
+    let data = allSiswa.filter(s => {
+      const matchQ = !q || (s.Nama||'').toLowerCase().includes(q) || (s.NIS||'').toString().includes(q);
+      const matchK = !kelas || s.Kelas === kelas;
+      return matchQ && matchK;
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Siswa');
+    XLSX.writeFile(wb, 'data_siswa.xlsx');
+    Utils.toast('Export berhasil', 'success');
+  }
+
+  function logout() {
+    Utils.removeLocal(CONFIG.STORAGE_KEYS.ADMIN_TOKEN);
+    Utils.removeLocal(CONFIG.STORAGE_KEYS.ADMIN_USER);
+    window.location.href = 'login.html';
+  }
+
+  loadSiswa();
+</script>
+</body>
+</html>

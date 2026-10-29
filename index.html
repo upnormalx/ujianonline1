@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ujian Online - Registrasi Siswa</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .reg-wrapper {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1E293B 0%, #2563EB 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .reg-wrapper::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 50%;
+      top: -200px; right: -200px;
+    }
+    .reg-wrapper::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 50%;
+      bottom: -100px; left: -100px;
+    }
+    .reg-card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .reg-header {
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      padding: 32px 36px;
+      text-align: center;
+      color: #fff;
+    }
+    .reg-header .school-icon { font-size: 3.5rem; margin-bottom: 10px; display: block; }
+    .reg-header h1 { font-size: 1.5rem; color: #fff; margin-bottom: 6px; }
+    .reg-header p  { color: rgba(255,255,255,0.8); font-size: 0.9rem; }
+    .reg-body { padding: 32px 36px; }
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #94A3B8;
+    }
+    .step .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #E2E8F0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.75rem;
+    }
+    .step.active { color: #2563EB; }
+    .step.active .step-num { background: #2563EB; color: #fff; }
+    .step.done .step-num { background: #16A34A; color: #fff; }
+    .step-line { width: 40px; height: 2px; background: #E2E8F0; margin: 0 4px; }
+    .step-line.done { background: #16A34A; }
+
+    .token-group { position: relative; }
+    .token-group .form-control { text-transform: uppercase; letter-spacing: 4px; font-size: 1.2rem; font-weight: 700; text-align: center; }
+    .token-hint { text-align: center; }
+
+    .reg-footer {
+      padding: 16px 36px 28px;
+      text-align: center;
+      border-top: 1px solid #F1F5F9;
+    }
+    .reg-footer a { color: #2563EB; font-size: 0.85rem; }
+
+    /* Info box */
+    .info-box {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      color: #1D4ED8;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 480px) {
+      .reg-header, .reg-body, .reg-footer { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="reg-wrapper">
+    <div class="reg-card">
+      <!-- Header -->
+      <div class="reg-header">
+        <span class="school-icon">🏫</span>
+        <h1>Ujian Online</h1>
+        <p>Silakan lengkapi data diri Anda untuk memulai ujian</p>
+      </div>
+
+      <!-- Body -->
+      <div class="reg-body">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+          <div class="step active" id="step1">
+            <div class="step-num">1</div>
+            <span class="hide-mobile">Identitas</span>
+          </div>
+          <div class="step-line" id="line1"></div>
+          <div class="step" id="step2">
+            <div class="step-num">2</div>
+            <span class="hide-mobile">Mapel</span>
+          </div>
+          <div class="step-line" id="line2"></div>
+          <div class="step" id="step3">
+            <div class="step-num">3</div>
+            <span class="hide-mobile">Token</span>
+          </div>
+        </div>
+
+        <!-- Panel 1: Identitas -->
+        <div id="panel-identitas">
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>Pilih kelas dan nama Anda sesuai data yang terdaftar di sekolah.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Kelas <span class="required">*</span></label>
+            <select class="form-control" id="sel-kelas">
+              <option value="">-- Memuat daftar kelas... --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nama Siswa <span class="required">*</span></label>
+            <select class="form-control" id="sel-nama" disabled>
+              <option value="">-- Pilih kelas terlebih dahulu --</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary btn-full btn-lg" id="btn-next1" onclick="nextStep(1)">
+            Lanjutkan <i class="fas fa-arrow-right ms-1"></i>
+          </button>
+        </div>
+
+        <!-- Panel 2: Mapel -->
+        <div id="panel-mapel" style="display:none">
+          <div class="info-box">
+            <i class="fas fa-book"></i>
+            <div>Pilih mata pelajaran yang akan diujikan hari ini.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Mata Pelajaran <span class="required">*</span></label>
+            <select class="form-control" id="sel-mapel" disabled>
+              <option value="">-- Memuat mapel... --</option>
+            </select>
+          </div>
+
+          <div id="mapel-info" style="display:none" class="info-box">
+            <i class="fas fa-clock"></i>
+            <div>Durasi: <strong id="info-durasi">-</strong> menit</div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-secondary flex-1" onclick="prevStep(2)">
+              <i class="fas fa-arrow-left"></i> Kembali
+            </button>
+            <button class="btn btn-primary flex-1" id="btn-next2" onclick="nextStep(2)">
+              Lanjutkan <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel 3: Token -->
+        <div id="panel-token" style="display:none">
+          <div class="info-box">
+            <i class="fas fa-key"></i>
+            <div>Masukkan token ujian yang diberikan oleh pengawas. Token bersifat rahasia.</div>
+          </div>
+
+          <!-- Ringkasan data -->
+          <div class="card" style="margin-bottom:20px;padding:16px;background:#F8FAFC;">
+            <div style="font-size:0.85rem;color:#64748B;margin-bottom:8px;">Ringkasan Data Anda:</div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:0.9rem;">
+              <span style="color:#64748B;">Nama</span>    <span id="sum-nama" style="font-weight:600;">-</span>
+              <span style="color:#64748B;">Kelas</span>   <span id="sum-kelas" style="font-weight:600;">-</span>
+              <span style="color:#64748B;">Mapel</span>   <span id="sum-mapel" style="font-weight:600;">-</span>
+            </div>
+          </div>
+
+          <div class="form-group token-group">
+            <label class="form-label">Token Ujian <span class="required">*</span></label>
+            <input type="text" class="form-control" id="inp-token"
+              placeholder="XXXXXX" maxlength="8"
+              oninput="this.value=this.value.toUpperCase()"
+              onkeydown="if(event.key==='Enter') submitRegistrasi()">
+            <div class="form-hint token-hint">6-8 karakter, huruf kapital & angka</div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-secondary flex-1" onclick="prevStep(3)">
+              <i class="fas fa-arrow-left"></i> Kembali
+            </button>
+            <button class="btn btn-primary flex-1 btn-lg" id="btn-submit" onclick="submitRegistrasi()">
+              <i class="fas fa-play-circle"></i> Mulai Ujian
+            </button>
+          </div>
+        </div>
+      </div><!-- /reg-body -->
+
+      <div class="reg-footer">
+        <a href="admin/login.html"><i class="fas fa-user-shield"></i> Masuk sebagai Admin</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script>
+    // ============================================================
+    // REGISTRASI SISWA - Logic
+    // ============================================================
+
+    let currentStep    = 1;
+    let dataSiswa      = []; // Semua siswa dari kelas terpilih
+    let dataMapel      = []; // Semua mapel dari kelas terpilih
+    let selectedSiswa  = null;
+    let selectedMapel  = null;
+
+    // ---- Init ----
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Cek jika sudah ada sesi aktif
+      const sesi = Utils.getLocal(CONFIG.STORAGE_KEYS.SESSION);
+      if (sesi && sesi.sessionId) {
+        const lanjut = await Utils.confirm(
+          'Sesi Aktif Ditemukan',
+          `Ada sesi ujian yang belum selesai untuk <strong>${sesi.nama}</strong> - ${sesi.namaMapel}. Lanjutkan ujian tersebut?`,
+          'Lanjutkan', 'Mulai Baru'
+        );
+        if (lanjut) {
+          window.location.href = 'ujian.html';
+          return;
+        } else {
+          Utils.removeLocal(CONFIG.STORAGE_KEYS.SESSION);
+          Utils.removeLocal(CONFIG.STORAGE_KEYS.JAWABAN);
+        }
+      }
+
+      loadKelas();
+    });
+
+    // ---- Load Kelas ----
+    async function loadKelas() {
+      Utils.showLoading(true, 'Memuat daftar kelas...');
+      try {
+        const res = await API.getKelas();
+        Utils.showLoading(false);
+
+        if (res.status !== 'success') throw new Error(res.message);
+
+        const sel = document.getElementById('sel-kelas');
+        sel.innerHTML = '<option value="">-- Pilih Kelas --</option>';
+        res.data.forEach(kelas => {
+          sel.innerHTML += `<option value="${kelas}">${kelas}</option>`;
+        });
+
+        sel.addEventListener('change', onKelasChange);
+      } catch (err) {
+        Utils.showLoading(false);
+        Utils.toast('Gagal memuat kelas: ' + err.message, 'error');
+        document.getElementById('sel-kelas').innerHTML =
+          '<option value="">⚠️ Gagal memuat - Refresh halaman</option>';
+      }
+    }
+
+    // ---- Kelas berubah → load siswa & mapel ----
+    async function onKelasChange() {
+      const kelas  = this.value;
+      const selNama = document.getElementById('sel-nama');
+
+      if (!kelas) {
+        selNama.disabled = true;
+        selNama.innerHTML = '<option value="">-- Pilih kelas terlebih dahulu --</option>';
+        return;
+      }
+
+      selNama.disabled = true;
+      selNama.innerHTML = '<option value="">Memuat siswa...</option>';
+
+      try {
+        // Load siswa & mapel secara paralel
+        const [resSiswa, resMapel] = await Promise.all([
+          API.getSiswa(kelas),
+          API.getMapel(kelas)
+        ]);
+
+        dataSiswa = resSiswa.data || [];
+        dataMapel = resMapel.data || [];
+
+        // Isi dropdown nama
+        selNama.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+        dataSiswa.forEach(s => {
+          selNama.innerHTML += `<option value="${s.NIS}">${s.Nama}</option>`;
+        });
+        selNama.disabled = false;
+
+        if (dataSiswa.length === 0) {
+          selNama.innerHTML = '<option value="">Tidak ada siswa di kelas ini</option>';
+        }
+      } catch (err) {
+        selNama.innerHTML = '<option value="">⚠️ Gagal memuat siswa</option>';
+        Utils.toast('Error: ' + err.message, 'error');
+      }
+    }
+
+    // ---- Step Navigation ----
+    function nextStep(from) {
+      if (from === 1) {
+        const kelas = document.getElementById('sel-kelas').value;
+        const nis   = document.getElementById('sel-nama').value;
+        if (!kelas || !nis) {
+          Utils.toast('Pilih kelas dan nama terlebih dahulu', 'warning');
+          return;
+        }
+        selectedSiswa = dataSiswa.find(s => String(s.NIS) === String(nis));
+
+        // Isi dropdown mapel
+        const selMapel = document.getElementById('sel-mapel');
+        selMapel.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
+        dataMapel.forEach(m => {
+          selMapel.innerHTML += `<option value="${m.KodeMapel}">${m.NamaMapel}</option>`;
+        });
+        selMapel.disabled = false;
+        selMapel.onchange = onMapelChange;
+
+        goToStep(2);
+
+      } else if (from === 2) {
+        const kodeMapel = document.getElementById('sel-mapel').value;
+        if (!kodeMapel) {
+          Utils.toast('Pilih mata pelajaran terlebih dahulu', 'warning');
+          return;
+        }
+        selectedMapel = dataMapel.find(m => m.KodeMapel === kodeMapel);
+
+        // Isi ringkasan
+        document.getElementById('sum-nama').textContent  = selectedSiswa.Nama;
+        document.getElementById('sum-kelas').textContent = selectedSiswa.Kelas;
+        document.getElementById('sum-mapel').textContent = selectedMapel.NamaMapel;
+
+        goToStep(3);
+      }
+    }
+
+    function prevStep(from) {
+      goToStep(from - 1);
+    }
+
+    function goToStep(n) {
+      currentStep = n;
+      document.getElementById('panel-identitas').style.display = n === 1 ? 'block' : 'none';
+      document.getElementById('panel-mapel').style.display     = n === 2 ? 'block' : 'none';
+      document.getElementById('panel-token').style.display     = n === 3 ? 'block' : 'none';
+
+      // Update step indicator
+      for (let i = 1; i <= 3; i++) {
+        const el   = document.getElementById(`step${i}`);
+        const line = i < 3 ? document.getElementById(`line${i}`) : null;
+        el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+        if (line) line.className = 'step-line' + (i < n ? ' done' : '');
+      }
+
+      if (n === 3) {
+        setTimeout(() => document.getElementById('inp-token').focus(), 100);
+      }
+    }
+
+    function onMapelChange() {
+      const kodeMapel = this.value;
+      const m         = dataMapel.find(m => m.KodeMapel === kodeMapel);
+      const infoBox   = document.getElementById('mapel-info');
+      if (m) {
+        document.getElementById('info-durasi').textContent = m.Durasi || CONFIG.DEFAULT_DURASI;
+        infoBox.style.display = 'flex';
+      } else {
+        infoBox.style.display = 'none';
+      }
+    }
+
+    // ---- Submit Registrasi ----
+    async function submitRegistrasi() {
+      const token = document.getElementById('inp-token').value.trim();
+      if (!token) {
+        Utils.toast('Masukkan token ujian terlebih dahulu', 'warning');
+        document.getElementById('inp-token').focus();
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit');
+      btn.disabled   = true;
+      btn.innerHTML  = '<i class="fas fa-spinner fa-spin"></i> Memvalidasi...';
+
+      try {
+        const res = await API.validasiToken({
+          kelas     : selectedSiswa.Kelas,
+          kodeMapel : selectedMapel.KodeMapel,
+          token     : token,
+          nis       : selectedSiswa.NIS,
+          nama      : selectedSiswa.Nama
+        });
+
+        if (res.status !== 'success') {
+          Utils.toast(res.message, 'error');
+          btn.disabled  = false;
+          btn.innerHTML = '<i class="fas fa-play-circle"></i> Mulai Ujian';
+          return;
+        }
+
+        // Simpan sesi ke localStorage
+        Utils.saveLocal(CONFIG.STORAGE_KEYS.SESSION, {
+          ...res.data,
+          nis      : selectedSiswa.NIS,
+          nama     : selectedSiswa.Nama,
+          kelas    : selectedSiswa.Kelas,
+          startTime: Date.now()
+        });
+        Utils.saveLocal(CONFIG.STORAGE_KEYS.JAWABAN, {});
+
+        Utils.toast('Token valid! Mengalihkan ke halaman ujian...', 'success');
+        setTimeout(() => window.location.href = 'ujian.html', 1200);
+
+      } catch (err) {
+        Utils.toast('Gagal menghubungi server: ' + err.message, 'error');
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-play-circle"></i> Mulai Ujian';
+      }
+    }
+  </script>
+</body>
+</html>
